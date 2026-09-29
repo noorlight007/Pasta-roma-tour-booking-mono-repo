@@ -62,7 +62,14 @@ export interface CreatePayPalOrderInput {
   description: string;
   /** Our own reference, so a PayPal dashboard row can be traced back here. */
   merchantOrderReference: string;
-  /** Shown above the buttons in PayPal's own window. */
+  /**
+   * Shown above the buttons in PayPal's own window, and — trimmed to 22
+   * characters — on a card-funded buyer's statement.
+   *
+   * It does not reach the buyer's PayPal activity row: that one carries the
+   * business name on the receiving account, which is set in PayPal's own
+   * settings and cannot be overridden per order.
+   */
   brandName: string;
 }
 
@@ -284,6 +291,11 @@ export class PayPalClient {
             custom_id: input.merchantOrderReference,
             invoice_id: input.merchantOrderReference,
             description: input.description.slice(0, 127),
+            // What a card-funded buyer's bank statement says. Without it the
+            // statement falls back to whatever the account's own descriptor is,
+            // which is the one place the brand name above does not reach.
+            // PayPal rejects anything longer than 22 characters.
+            soft_descriptor: input.brandName.slice(0, 22),
             amount: {
               currency_code: input.currency,
               value: toPayPalAmount(input.amount),

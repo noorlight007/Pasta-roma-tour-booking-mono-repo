@@ -69,6 +69,26 @@ cloudflared tunnel --url http://localhost:4000     # or: ngrok http 4000
 # register https://<tunnel-host>/api/v1/payments/webhook/paypal
 ```
 
+### Going live
+
+Four values move together, and three of the four are easy to leave behind:
+
+| Value                  | Sandbox                  | Live                                     |
+| ---------------------- | ------------------------ | ---------------------------------------- |
+| `PAYPAL_MODE`          | `sandbox`                | `live`                                   |
+| `PAYPAL_CLIENT_ID`     | the sandbox app's        | the **live** app's — a different app     |
+| `PAYPAL_CLIENT_SECRET` | the sandbox app's        | the live app's                           |
+| `PAYPAL_WEBHOOK_ID`    | the sandbox webhook's id | a webhook registered on the **live** app |
+
+A webhook id is not portable between the two. Carrying the sandbox one over leaves an endpoint that refuses every live event it is sent — which does not stop a payment (the capture is confirmed by this server's own call to PayPal), but does mean refunds, disputes and reversals never post back, so the bookings behind them silently stop matching PayPal.
+
+Only the API reads any of these, and the client id reaches the browser through the payment-intent response rather than a build-time variable — so the switch is an API restart, not a front-end rebuild.
+
+Two things live *only* in PayPal's settings and no order can override them:
+
+- **The name on the buyer's activity row** is the business name on the receiving account (Account Settings → Business Information). A sandbox business test account ships as "John Doe's Test Store"; a live account shows whatever the business is registered as.
+- **Which currencies settle.** Bookings are charged in EUR or USD without conversion, so the live account has to accept both.
+
 ### Events
 
 | Event                       | What it does here                                                            |
