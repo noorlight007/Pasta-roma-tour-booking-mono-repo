@@ -268,6 +268,12 @@ function PayPalPanel({
         // not enabled on this account.
         components: 'buttons',
         intent: 'capture',
+        // No "Debit or Credit Card" button. That route is PayPal's guest
+        // checkout, which is onboarded separately from the wallet and is not
+        // enabled here — offering it only to have it fail at the last step is
+        // worse than not offering it. Paying with a card *through* a PayPal
+        // account is unaffected; this hides the card-without-an-account tile.
+        disableFunding: 'card',
       }}
     >
       <div className="flex flex-col gap-5">
