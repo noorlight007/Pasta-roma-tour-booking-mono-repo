@@ -2,13 +2,14 @@ import type { Metadata } from 'next';
 import Link from 'next/link';
 import { notFound } from 'next/navigation';
 
-import { Breadcrumb, Card, CardContent, SectionHeading, Thumbnail, Timeline } from '@pasta/ui';
+import { Breadcrumb, Card, CardContent, SectionHeading, Timeline } from '@pasta/ui';
 import { formatDuration } from '@pasta/utils';
 import { Check, Clock, Info, MapPin, ShieldCheck, Smartphone } from 'lucide-react';
 
 import { Footer } from '@/components/layout/footer';
 import { Navbar } from '@/components/layout/navbar';
 import { BookingSidebar } from '@/components/tours/booking-sidebar';
+import { TourGallery } from '@/components/tours/tour-gallery';
 import { TourCarousel } from '@/components/tours/tour-carousel';
 import { api, safely } from '@/lib/api';
 import { activeCurrency } from '@/lib/currency.server';
@@ -62,9 +63,12 @@ export default async function TourDetailPage({ params }: { params: Params }) {
   const others = catalogue.filter((item) => item.slug !== tour.slug);
 
   // The cover leads the gallery wherever it sits in the uploaded order, and the
-  // three tiles beneath it are the rest — never the cover a second time.
+  // tiles beneath it are the rest (the viewer opens them all) — never the cover a second time.
   const cover = tour.gallery.find((image) => image.isCover) ?? tour.gallery[0];
-  const rest = tour.gallery.filter((image) => image.url !== cover?.url).slice(0, 3);
+  const galleryImages = [
+    ...(cover ? [cover] : []),
+    ...tour.gallery.filter((image) => image.url !== cover?.url),
+  ];
 
   return (
     <>
@@ -90,25 +94,11 @@ export default async function TourDetailPage({ params }: { params: Params }) {
             {/* Gallery. The cover leads; the next three sit under it. Each tile
                 falls back to the brand gradient when there is no photo for it
                 yet, which is what the whole gallery used to be. */}
-            <div className="flex flex-col gap-3">
-              <Thumbnail
-                src={cover?.url ?? tour.coverImage}
-                alt={`${tour.title} — main photograph`}
-                className="rounded-card aspect-[16/9] w-full"
-              />
-              {rest.length > 0 ? (
-                <div className="grid grid-cols-3 gap-3">
-                  {rest.map((image) => (
-                    <Thumbnail
-                      key={image.url}
-                      src={image.url}
-                      alt={image.alt ?? tour.title}
-                      className="rounded-card aspect-[16/10] w-full"
-                    />
-                  ))}
-                </div>
-              ) : null}
-            </div>
+            <TourGallery
+              title={tour.title}
+              images={galleryImages}
+              fallbackCover={tour.coverImage}
+            />
 
             {/* Title. The one-line subtitle under the H1 was struck from the design. */}
             <div className="flex flex-col gap-5">
@@ -134,7 +124,9 @@ export default async function TourDetailPage({ params }: { params: Params }) {
                 ))}
               </ul>
 
-              <p className="text-muted-foreground max-w-3xl">{tour.description}</p>
+              <p className="text-muted-foreground max-w-3xl whitespace-pre-line">
+                {tour.description}
+              </p>
             </div>
 
             {/* Highlights & inclusions */}
